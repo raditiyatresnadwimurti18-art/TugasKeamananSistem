@@ -15,18 +15,65 @@ Program ini mengimplementasikan algoritma kriptografi klasik berbasis tiga metod
 
 ---
 
-## Struktur File
+## Struktur & Kegunaan Masing-Masing File
 
 ```
 TugasKeamananSistem/
-├── config.py          → Konstanta: tabel substitusi, block size, key blocking, key permutasi
-├── encryption.py      → Fungsi enkripsi 5 langkah
-├── decryption.py      → Fungsi dekripsi (membalik 5 langkah)
-├── display.py         → Fungsi tampilan: banner, separator, langkah-langkah
-├── main.py            → Entry point & menu interaktif
-├── classical_cipher.py→ Versi monolitik lama (referensi)
-└── BLUEPRINT.md       → Dokumen ini
+├── config.py          → Konstanta konfigurasi, tabel substitusi, dan kunci permutasi
+├── encryption.py      → Modul implementasi alur enkripsi 5 langkah
+├── decryption.py      → Modul implementasi alur dekripsi (pembalikan 5 langkah)
+├── display.py         → Modul antarmuka CLI, visualisasi langkah demi langkah & banner
+├── main.py            → Entry point aplikasi, alur menu interaktif, dan session state
+├── classical_cipher.py→ Versi monolitik awal (arsip & referensi)
+└── BLUEPRINT.md       → Dokumentasi teknis & arsitektur sistem
 ```
+
+### Rincian Kegunaan Tiap File:
+
+1. **`config.py` (Pusat Konfigurasi & Kunci)**
+   - Bertindak sebagai *Single Source of Truth* untuk seluruh parameter kriptografi.
+   - **Tabel Substitusi**: Mendefinisikan pemetaan monoalfabetik asli ke ciphertext (`SUBSTITUTION_TABLE`) serta tabel pembalikannya (`INVERSE_SUBSTITUTION_TABLE`).
+   - **Parameter Blok**: Mengatur ukuran blok (`BLOCK_SIZE = 8`) dan simbol pengisi kekosongan (`PADDING_CHAR = '.'`).
+   - **Kunci Permutasi**: Menyimpan pola pengacakan `KEY_BLOCKING` (`7 2 6 8 1 4 3 5`) dan `KEY_PERMUTATION` (`2 4 1 7 5 8 3 6`) baik dalam format 1-based (standar tugas) maupun 0-based (indeks Python).
+   - **Generator Inverse Key**: Memiliki fungsi `invert_key()` untuk menghasilkan kunci pembalik dekripsi secara matematis dan otomatis.
+
+2. **`encryption.py` (Logika Algoritma Enkripsi)**
+   - Bertanggung jawab memproses data teks biasa (*plaintext*) menjadi teks terenkripsi (*ciphertext*) melalui 5 tahapan berurutan:
+     - `normalize_and_substitute()`: Mengubah teks ke huruf besar dan memetakan setiap karakter sesuai tabel substitusi.
+     - `block_and_pad()`: Membagi string menjadi blok berukuran 8 karakter dan menyisipkan titik `.` jika panjangnya ganjil/bukan kelipatan 8.
+     - `key_blocking()`: Mengacak urutan karakter per blok dengan pola kunci blocking.
+     - `key_permute()`: Mengacak kembali blok perantara menggunakan pola kunci permutasi akhir.
+     - `encrypt()`: Fungsi orkestrasi utama yang mengeksekusi semua langkah dan membungkus hasil setiap tahapan dalam dictionary untuk keperluan inspeksi.
+
+3. **`decryption.py` (Logika Algoritma Dekripsi)**
+   - Bertanggung jawab memulihkan teks tersandi (*ciphertext*) kembali menjadi pesan asli (*plaintext*) secara presisi dengan membalik alur enkripsi:
+     - Memecah ciphertext menjadi potongan blok 8 karakter.
+     - `inverse_permute()`: Membalikkan permutasi tahap kedua menggunakan `INVERSE_KEY_PERMUTATION`.
+     - `inverse_blocking()`: Membalikkan permutasi tahap pertama menggunakan `INVERSE_KEY_BLOCKING`.
+     - `remove_padding()`: Menggabungkan seluruh blok (*unblocking*) dan memotong karakter padding titik sesuai parameter `original_length`.
+     - `inverse_substitute()`: Menerjemahkan kembali simbol sandi ke karakter alfabet aslinya menggunakan `INVERSE_SUBSTITUTION_TABLE`.
+     - `decrypt()`: Fungsi orkestrasi dekripsi utama.
+
+4. **`display.py` (Visualisasi & Tampilan Terminal)**
+   - Menangani seluruh presentasi output di terminal agar rapi, terstruktur, dan mudah dipahami:
+     - `print_banner()`: Menampilkan logo ASCII art dan identitas mata kuliah saat aplikasi pertama kali dijalankan.
+     - `print_config()`: Menampilkan konfigurasi sistem, pola permutasi, dan mencetak matriks tabel substitusi monoalfabetik.
+     - `display_encryption_steps()`: Memvisualisasikan perubahan teks pada setiap langkah enkripsi (Input → Substitusi → Blocking → Key Blocking → Key Permutasi → Output).
+     - `display_decryption_steps()`: Memvisualisasikan setiap langkah proses dekripsi secara transparan.
+     - `display_verification()`: Membandingkan teks plaintext asli dengan teks hasil dekripsi untuk membuktikan keberhasilan *round-trip*.
+
+5. **`main.py` (Program Utama & Menu Interaktif)**
+   - Merupakan file eksekusi (*entry point*) yang dijalankan oleh pengguna (`python main.py`).
+   - Menyediakan antarmuka menu berbasis teks (`[1] Enkripsi`, `[2] Dekripsi`, `[3] Konfigurasi`, `[0] Keluar`).
+   - Menangani validasi input pengguna serta penanganan pesan kesalahan (*error handling*).
+   - **Fitur Session State**: Menyimpan riwayat enkripsi terakhir agar pengguna dapat langsung menguji dekripsi dan memverifikasi hasilnya tanpa perlu menyalin ciphertext atau mengetik ulang panjang karakter asli secara manual.
+
+6. **`classical_cipher.py` (Versi Monolitik / Referensi)**
+   - File versi pertama di mana seluruh algoritma dan antarmuka ditulis dalam satu file tunggal.
+   - Dipertahankan sebagai arsip pembanding bagi pengajar/penguji untuk melihat evolusi refaktorisasi kode dari monolitik menjadi arsitektur modular yang rapi.
+
+7. **`BLUEPRINT.md` (Dokumentasi Teknis)**
+   - Dokumen rancangan sistem dan spesifikasi teknis lengkap yang menjelaskan arsitektur perangkat lunak, pemetaan kunci, simulasi matematis manual, alur data, serta petunjuk pengoperasian program.
 
 ---
 
